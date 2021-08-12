@@ -100,8 +100,8 @@ class PreprocessData:
             self.train = pd.concat([pos, sample_neg]).sample(frac=1, random_state=42)
 
     def reduce_mem(self):
-        print('TRAIN MB usage before:', np.round(self.train.memory_usage().sum() // 1024 / 1024, 2))
-        print('VALID MB usage before:', np.round(self.valid.memory_usage().sum() // 1024 / 1024, 2))
+        print('TRAIN memory usage before:', np.round(self.train.memory_usage().sum() // 1024 / 1024, 2), 'Mb')
+        print('VALID memory usage before:', np.round(self.valid.memory_usage().sum() // 1024 / 1024, 2), 'Mb')
         print('Changing categorical features type...')
         for col in tqdm(self.gen_data.feature_types['categorical']):
             s_train = self.train[col]
@@ -125,8 +125,8 @@ class PreprocessData:
             self.train[col] = s_train
             self.valid[col] = s_valid
 
-        print('TRAIN MB usage after:', np.round(self.train.memory_usage().sum() // 1024 / 1024, 4))
-        print('VALID MB usage after:', np.round(self.valid.memory_usage().sum() // 1024 / 1024, 4))
+        print('TRAIN memory usage after:', np.round(self.train.memory_usage().sum() // 1024 / 1024, 4), 'Mb')
+        print('VALID memory usage after:', np.round(self.valid.memory_usage().sum() // 1024 / 1024, 4), 'Mb')
 
     def run(self):
         self.remove_bad()
