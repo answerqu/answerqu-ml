@@ -11,7 +11,7 @@ gini = lambda y,x: roc_auc_score(y, x)*2 - 1
 
 class GenData:
     def __init__(self, data: dict = {}, trg_feature: str = None, date_feature: str = None, id_feature: str = None,
-                 meta_features: list = []) -> NoReturn:
+                 meta_features: list = [], ignore_dt: bool = True) -> NoReturn:
         self.train = data['train']
         self.valid = data['valid']
 
@@ -28,6 +28,7 @@ class GenData:
         self.trg_stats = {'main': {}}
 
         self.task_type = 'binary' if self.train[date_feature].nunique() == 2 else 'multi'
+        self.ignore_dt = ignore_dt
 
     def define_types(self):
         cat_features = []
@@ -36,9 +37,9 @@ class GenData:
 
         for col in self.long_list:
             series = self.train[col]
-            if any([c in col for c in ['dt', 'date']]) \
+            if (any([c in col for c in ['dt', 'date']]) \
                     or 'date' in str(series.dtype) or 'time' in str(series.dtype) \
-                    or series.map(lambda x: '-' in str(x)).sum()/series.dropna().size > 0.96:
+                    or series.map(lambda x: '-' in str(x)).sum()/series.dropna().size > 0.96) and not self.ignore_dt:
                 date_features.append(col)
             elif series.nunique() == 2 or \
                     any([c in col for c in ['string', 'code', 'cat', 'category']]) \
@@ -123,7 +124,7 @@ class GenData:
         """
         y = self.train[self.trg_feature]
         trg_funcs_numerical = {'corr': lambda x: np.corrcoef(y,x)[0,1],
-                             'gini': lambda x: gini(y,x),
+                             'gini': lambda x: gini(y,x.fillna(-9999)),
                              'max': lambda x: x[y == 1].max(),
                              'min': lambda x: x[y == 1].min(),
                              'std': lambda x: x[y == 1].std(),
@@ -208,7 +209,8 @@ class GenData:
                 # CONST FEATURES numerical
                 #############################
                 s_norm = MinMaxScaler().fit_transform(series.values.reshape(-1, 1))
-                if np.std(s_norm) < thr_const_float:
+                if (np.std(s_norm) < thr_const_float) or \
+                        (self.feature_stats['main'][f_type][col]['q05'] == self.feature_stats['main'][f_type][col]['q95']):
                     self.bad_feats.update({col: 'const_numerical'})
                     continue
 
@@ -260,7 +262,6 @@ class GenData:
         elif feats_list is not None:
             best_numeric = feats_list
 
-
         stats = {}
         for stat in stats_plot:
             stats[stat] = {}
@@ -281,7 +282,7 @@ class GenData:
             fig, ax = plt.subplots()
             x, y = zip(*sorted(self.trg_stats['main']['categorical'][col]['target_rate'].items()))
             ax.plot(x, y, color='yellow', zorder=1)
-            ax.axhline(y=self.train.Class.mean(), color='r', linestyle='--')
+            ax.axhline(y=self.train[self.trg_feature].mean(), color='r', linestyle='--')
             pd.Series(self.feature_stats['main']['categorical'][col]['n_obs']).plot(kind='bar', secondary_y=True)
             plt.show()
 
@@ -293,6 +294,7 @@ class GenData:
         self.plot_pie(pie_params=pie_params, **kwargs)
         stats = self.plot_dynamics(dynamic_params=dynamics_params, **kwargs)
         self.cat_hist_trg()
+        return stats
 
 
     def run(self):
