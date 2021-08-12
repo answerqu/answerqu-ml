@@ -124,7 +124,7 @@ class GenData:
         """
         y = self.train[self.trg_feature]
         trg_funcs_numerical = {'corr': lambda x: np.corrcoef(y,x)[0,1],
-                             'gini': lambda x: gini(y,x.fillna(-9999)),
+                             'gini': lambda x: gini(y, x.fillna(-9999)),
                              'max': lambda x: x[y == 1].max(),
                              'min': lambda x: x[y == 1].min(),
                              'std': lambda x: x[y == 1].std(),

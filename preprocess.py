@@ -131,7 +131,7 @@ class PreprocessData:
     def run(self):
         self.remove_bad()
         self.encode()
-        self.encode_dates()
+        #self.encode_dates()
         #self.encode_enum()
         self.encode_nans()
         self.sampling()
